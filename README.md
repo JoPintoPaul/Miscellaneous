@@ -1,4 +1,0 @@
-Miscellaneous
-=============
-
-Miscellaneous code files
