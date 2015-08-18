@@ -1,0 +1,59 @@
+object MainCheckout {
+  def main(args: Array[String]) = {
+    val priceList: List[Item] = List(
+      Item("A", 50, Some(SpecialOffer(3, 130))),
+      Item("B", 30, Some(SpecialOffer(2, 45))),
+      Item("C", 20),
+      Item("D", 15)
+    )
+
+    val transaction = Transaction(priceList)
+    println("Please enter a series of SKUs, separated by commas. For example: A,B,C")
+    val skus =  scala.io.StdIn.readLine()
+    val total = transaction.calculateTotal(skus)
+    println(s"Total is: $total")
+  }
+}
+
+case class Item(sku: String, standardPrice: Int, specialOffer: Option[SpecialOffer] = None)
+
+case class SpecialOffer(multiplier: Int, price: Int)
+
+case class ItemsWithQuantities(item: Item, quantity: Int) {
+  val totalPrice: Int = {
+    item.specialOffer match {
+      case Some(offer: SpecialOffer) =>
+        val quantityOfSpecialOffers = quantity / offer.multiplier
+        val quantityOfStandardPrice = quantity % offer.multiplier
+        quantityOfSpecialOffers * offer.price + quantityOfStandardPrice * item.standardPrice
+      case None => quantity * item.standardPrice
+    }
+  }
+}
+
+case class Transaction(priceList: List[Item]) {
+  def calculateTotal(itemsSkusAsString: String): Int = {
+    val itemSkus: List[String] = itemsSkusAsString.split(",").toList
+    val items: List[Item] = itemSkus.map(itemSku => convertToItemFromSku(itemSku))
+    val groupedItemsWithQuantities: List[ItemsWithQuantities] = convertToItemsWithQuantities(items)
+    totalForItems(groupedItemsWithQuantities)
+  }
+
+  private def convertToItemFromSku(sku: String): Item = {
+    priceList.find(price => price.sku.equals(sku)) match {
+      case Some(item) => item
+      case _ => throw ItemNotFoundException()
+    }
+  }
+
+  private def convertToItemsWithQuantities(itemList: List[Item]): List[ItemsWithQuantities] = {
+    val groupedItems: List[List[Item]] = itemList.groupBy(_.sku).values.toList
+    groupedItems.map(item => ItemsWithQuantities(item.head, item.length))
+  }
+
+  private def totalForItems(items: List[ItemsWithQuantities]) = {
+    items.map(_.totalPrice).sum
+  }
+}
+
+case class ItemNotFoundException() extends Exception("Sorry, this item has not been recognised. Please wait for assistance.")
