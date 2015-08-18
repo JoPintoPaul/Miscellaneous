@@ -1,0 +1,39 @@
+import org.specs2.mutable.Specification
+
+class TransactionSpec extends Specification {
+
+  val priceList: List[Item] = List(
+    Item("A", 50, Some(SpecialOffer(3, 130))),
+    Item("B", 30, Some(SpecialOffer(2, 45))),
+    Item("C", 20),
+    Item("D", 15)
+  )
+
+  val transaction = Transaction(priceList)
+
+  "Given a valid price list, getting the total for a series of items" should {
+    "calculate a single item price correctly" >> {
+      val total = transaction.calculateTotal("B")
+      total must beEqualTo(30)
+    }
+
+    "calculate a series of individual item prices correctly" >> {
+      val total = transaction.calculateTotal("A,B,C,D")
+      total must beEqualTo(115)
+    }
+
+    "calculate bulk discounts correctly" >> {
+      val total = transaction.calculateTotal("A,A,A,B,B")
+      total must beEqualTo(175)
+    }
+
+    "calculate individual items and bulk discounts correctly" >> {
+      val total = transaction.calculateTotal("A,A,A,B,C,D")
+      total must beEqualTo(195)
+    }
+
+    "throw an Item Not Found exception if an invalid SKU is entered" >> {
+      transaction.calculateTotal("A,E") must throwAn[ItemNotFoundException]
+    }
+  }
+}
